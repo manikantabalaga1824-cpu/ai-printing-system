@@ -1,0 +1,7 @@
+{
+  "name": "AI PrintOS",
+  "description": "A browser-based bilingual print design workspace for posters, business cards, invitations, and more with Telugu and English support.",
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
