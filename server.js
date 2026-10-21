@@ -1,5 +1,4 @@
-import express, { Request, Response } from 'express';
-import { createServer as createViteServer } from 'vite';
+import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
@@ -15,13 +14,16 @@ const HOST = '0.0.0.0';
 
 app.use(express.json({ limit: '10mb' }));
 
+// Serve static frontend files (HTML, CSS, JS, Assets)
+app.use(express.static(__dirname));
+
 // Health / OPTIONS check for AI endpoint
-app.options('/api/generate-image', (_req: Request, res: Response) => {
+app.options('/api/generate-image', (_req, res) => {
   res.status(204).end();
 });
 
 // Real server-side Gemini Image Generation Proxy
-app.post('/api/generate-image', async (req: Request, res: Response) => {
+app.post('/api/generate-image', async (req, res) => {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     return res.status(503).json({
@@ -64,7 +66,7 @@ app.post('/api/generate-image', async (req: Request, res: Response) => {
       signal: AbortSignal.timeout(90000),
     });
 
-    const data: any = await response.json().catch(() => ({}));
+    const data = await response.json().catch(() => ({}));
     if (!response.ok) {
       const msg = data?.error?.message || 'Upstream provider request failed.';
       return res.status(response.status === 429 ? 429 : 502).json({
@@ -72,11 +74,11 @@ app.post('/api/generate-image', async (req: Request, res: Response) => {
       });
     }
 
-    const parts = data?.candidates?.flatMap((c: any) => c?.content?.parts || []) || [];
-    const imagePart = parts.find((p: any) => p?.inlineData?.data && /^image\/(png|jpeg|webp)$/.test(p.inlineData.mimeType || ''));
+    const parts = data?.candidates?.flatMap((c) => c?.content?.parts || []) || [];
+    const imagePart = parts.find((p) => p?.inlineData?.data && /^image\/(png|jpeg|webp)$/.test(p.inlineData.mimeType || ''));
 
     if (!imagePart) {
-      const textPart = parts.find((p: any) => typeof p?.text === 'string')?.text;
+      const textPart = parts.find((p) => typeof p?.text === 'string')?.text;
       return res.status(502).json({
         error: textPart
           ? `Model did not return image bytes: ${textPart.slice(0, 180)}`
@@ -94,7 +96,7 @@ app.post('/api/generate-image', async (req: Request, res: Response) => {
       imageDataUrl: `data:${mimeType};base64,${base64}`,
       mimeType,
     });
-  } catch (err: any) {
+  } catch (err) {
     const isTimeout = err?.name === 'TimeoutError' || err?.name === 'AbortError';
     return res.status(502).json({
       error: isTimeout ? 'Image generation timed out. Please retry.' : `Could not reach image provider: ${err?.message || 'Network error'}`,
@@ -102,28 +104,11 @@ app.post('/api/generate-image', async (req: Request, res: Response) => {
   }
 });
 
-async function startServer() {
-  const isProd = process.env.NODE_ENV === 'production';
+// Fallback to index.html for SPA routes
+app.get('*', (_req, res) => {
+  res.sendFile(path.resolve(__dirname, 'index.html'));
+});
 
-  if (!isProd) {
-    const vite = await createViteServer({
-      server: { middlewareMode: true, host: HOST, port: PORT },
-      appType: 'spa',
-    });
-    app.use(vite.middlewares);
-  } else {
-    app.use(express.static(path.resolve(__dirname, 'dist')));
-    app.get('*', (_req: Request, res: Response) => {
-      res.sendFile(path.resolve(__dirname, 'dist', 'index.html'));
-    });
-  }
-
-  app.listen(PORT, HOST, () => {
-    console.log(`AI PrintOS server running at http://${HOST}:${PORT}`);
-  });
-}
-
-startServer().catch((err) => {
-  console.error('Failed to start server:', err);
-  process.exit(1);
+app.listen(PORT, HOST, () => {
+  console.log(`AI PrintOS vanilla server running at http://${HOST}:${PORT}`);
 });

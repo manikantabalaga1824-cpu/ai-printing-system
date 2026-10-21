@@ -4,26 +4,14 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "tsx server.ts",
-    "build": "vite build && tsc --noEmit",
-    "start": "NODE_ENV=production tsx server.ts",
-    "lint": "tsc --noEmit"
+    "dev": "node server.js",
+    "start": "NODE_ENV=production node server.js",
+    "build": "node -e \"console.log('Pure vanilla HTML5/CSS3/JavaScript frontend ready')\"",
+    "lint": "node --check server.js",
+    "test": "node test-keyboard.js"
   },
   "dependencies": {
-    "@google/genai": "^2.30.0",
     "dotenv": "^16.4.7",
-    "express": "^4.21.2",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
-  },
-  "devDependencies": {
-    "@types/express": "^5.0.0",
-    "@types/node": "^22.10.1",
-    "@types/react": "^18.3.12",
-    "@types/react-dom": "^18.3.1",
-    "@vitejs/plugin-react": "^4.3.4",
-    "tsx": "^4.19.2",
-    "typescript": "^5.7.2",
-    "vite": "^6.0.3"
+    "express": "^4.21.2"
   }
 }
